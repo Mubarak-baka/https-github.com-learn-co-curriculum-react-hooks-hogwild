@@ -6,7 +6,7 @@ import { Modal, Button } from 'react-bootstrap';
 import Nav from "./Nav"; // Navigation component
 
 // Component to display each hog item
-function HogDisplay({ hogList, onHogClick, activeHog }) {
+function HogDisplay({ hogList, onHogClick, activeHog, toggleHogVisibility }) {
   const [greaseFilter, setGreaseFilter] = useState(false);
   const [sortType, setSortType] = useState('');
 
@@ -20,8 +20,10 @@ function HogDisplay({ hogList, onHogClick, activeHog }) {
     setSortType(event.target.value);
   };
 
-  // Apply greased filter if selected
-  const hogsToDisplay = greaseFilter ? hogList.filter(hog => hog.greased) : hogList;
+  // Apply greased filter and exclude hidden hogs if selected
+  const hogsToDisplay = greaseFilter
+    ? hogList.filter(hog => hog.greased && !hog.hidden)
+    : hogList.filter(hog => !hog.hidden);
 
   // Sort the filtered hogs list based on chosen sorting option
   const displayedHogs = [...hogsToDisplay].sort((hogA, hogB) => {
@@ -70,6 +72,15 @@ function HogDisplay({ hogList, onHogClick, activeHog }) {
                     <p>Top Medal: {hog["highest medal achieved"]}</p>
                   </div>
                 )}
+                <Button
+                  variant="secondary"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering onHogClick
+                    toggleHogVisibility(idx);
+                  }}
+                >
+                  {hog.hidden ? "Show" : "Hide"}
+                </Button>
               </div>
             </div>
           </div>
@@ -81,7 +92,7 @@ function HogDisplay({ hogList, onHogClick, activeHog }) {
 
 // Main application component
 function App() {
-  const [hogList, setHogList] = useState(hogData);
+  const [hogList, setHogList] = useState(hogData.map(hog => ({ ...hog, hidden: false })));
   const [activeHogIndex, setActiveHogIndex] = useState(null);
   const [hogForm, setHogForm] = useState({
     name: '',
@@ -89,14 +100,21 @@ function App() {
     greased: false,
     weight: '',
     "highest medal achieved": '',
-    image: ''
+    image: '',
+    hidden: false // New property for hiding the hog
   });
-
-  const [showModal, setShowModal] = useState(false); // State to control modal visibility
+  const [showModal, setShowModal] = useState(false);
 
   // Toggle the active hog to show/hide details
   const handleHogClick = (index) => {
     setActiveHogIndex(activeHogIndex === index ? null : index);
+  };
+
+  // Toggle visibility of a hog
+  const toggleHogVisibility = (index) => {
+    setHogList(hogList.map((hog, idx) =>
+      idx === index ? { ...hog, hidden: !hog.hidden } : hog
+    ));
   };
 
   // Update form fields for adding a new hog
@@ -118,13 +136,13 @@ function App() {
       greased: false,
       weight: '',
       "highest medal achieved": '',
-      image: ''
+      image: '',
+      hidden: false
     });
     setShowModal(false); // Close modal after submitting
   };
 
   return (
-    
     <div className="container text-center my-4">
       <h1 className='display-4'>Hog Showcase</h1>
       <Nav />
@@ -214,7 +232,12 @@ function App() {
       </Modal>
 
       {/* Display hogs */}
-      <HogDisplay hogList={hogList} onHogClick={handleHogClick} activeHog={activeHogIndex} />
+      <HogDisplay
+        hogList={hogList}
+        onHogClick={handleHogClick}
+        activeHog={activeHogIndex}
+        toggleHogVisibility={toggleHogVisibility}
+      />
       
     </div>
   );
